@@ -39,7 +39,7 @@ pip install webdriver-manager
  ### 1. Clone Repository
 ```
 git clone https://frislam/nu-clear.git
-cd NU-clear
+cd nu-clear
 ```
  ### 2. ChromeDriver Setup
 ```
