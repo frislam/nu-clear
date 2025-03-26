@@ -30,9 +30,9 @@ sudo apt install python3 python3-pip python3-venv git unzip
 
 # Python libraries
 sudo apt install python3-pandas
-pip install selenium
+pip3 install selenium
 sudo apt install python3-fpdf python3-markdown
-pip install webdriver-manager
+pip3 install webdriver-manager
 ```
 ## Setup
 
