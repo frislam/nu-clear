@@ -12,15 +12,15 @@ NU-Clear is an automated Python tool that:
 - Handles special cases (Absent/Fail/Not Registered)
 
 **Current Support:**
-- Bachelor Degree (Honours) 1st Year Results
-- B.Sc Program (Psychology Department)
-- 2023 Published Results
+- For All Latest Examination
+- For All Group ( B.A, B.S.S, B.Ss, B.B.A, B.Music, B.Sports )
+- Latest Year Published Results
 
 ## Requirements
 
 ### System
 - Linux (Tested on Debian 12)
-- Chrome Browser 115.0.5790.114 or later
+- Chrome Browser 115 or later
 
 ### Dependencies
 ```bash
@@ -72,9 +72,11 @@ sudo python3 students.py
   - **ChromeDriver Mismatch**
 
 ## Version History
-- 1.0 (current):
+- 1.2 (current):
   - Initial release
-  - Supports Psychology Department B.Sc 1st Year
+  - Supports All Examination
+  - All Group
+  - All Departments
   - Handle Absent/Fail cases
 
 ## Disclaimer
