@@ -13,7 +13,7 @@ NU-Clear is an automated Python tool that:
 
 **Current Support:**
 - For All Latest Examination
-- For All Group ( B.A, B.S.S, B.Ss, B.B.A, B.Music, B.Sports )
+- For All Group ( B.A, B.S.S, B.Sc, B.B.A, B.Music, B.Sports )
 - Latest Year Published Results
 
 ## Requirements
