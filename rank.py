@@ -1,14 +1,11 @@
-# version: 02
-# Author: Sultan FR
-import csv
+# version: 1.2
 import os
+import csv
 from fpdf import FPDF
 
 # Configuration
 INPUT_CSV = "./results/nu_results.csv"
 OUTPUT_DIR = "./reports"
-
-# Grade to point mapping (case-insensitive) with Absent added
 GRADE_POINTS = {
     'a+': 4.00, 'a': 3.75, 'a-': 3.50,
     'b+': 3.25, 'b': 3.00, 'b-': 2.75,
@@ -17,160 +14,167 @@ GRADE_POINTS = {
     'absent': -1.00  # Added Absent with lowest value
 }
 
-def normalize_grade(grade):
-    """Convert grade to standard format including Absent"""
-    grade = str(grade).strip().lower()
-    if grade == 'fail':
-        return 'f'
-    elif grade == 'absent':
-        return 'absent'  # Keep absent as is
-    return grade
+class RankingCreator:
+    def __init__(self, input_csv=INPUT_CSV, output_dir=OUTPUT_DIR):
+        self.INPUT_CSV = input_csv
+        self.OUTPUT_DIR = output_dir
 
-def load_student_data():
-    """Load and validate student data from CSV with Absent handling"""
-    students = []
+    def generate_rankings(self):
+        """Generate ranking reports for all groups"""
+        print("\nGenerating ranking reports for all groups...")
 
-    if not os.path.exists(INPUT_CSV):
-        print(f"Error: CSV file not found at {INPUT_CSV}")
+        # Load and filter student data
+        all_students = self.load_student_data()
+
+        if not all_students:
+            print("No valid student records found")
+            return
+
+        # Group students by their group
+        grouped_students = {}
+        for student in all_students:
+            group = student.get('Group', 'Unknown')
+            if group not in grouped_students:
+                grouped_students[group] = []
+            grouped_students[group].append(student)
+
+        # Generate separate PDFs for each group
+        for group, students in grouped_students.items():
+            if students:
+                ranked_students = self.rank_students(students)
+                self.generate_pdf_report(ranked_students, group)
+                print(f"Generated ranking report for {group} group")
+
+        print(f"\nAll ranking reports generated in: {self.OUTPUT_DIR}")
+
+    def load_student_data(self):
+        """Load and filter student data from CSV"""
+        students = []
+        if not os.path.exists(self.INPUT_CSV):
+            print(f"Error: CSV file not found at {self.INPUT_CSV}")
+            return students
+
+        with open(self.INPUT_CSV, mode='r', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for row_num, row in enumerate(reader, 1):
+                try:
+                    # Skip unregistered and format-not-recognized students
+                    if ("This Student Is Not Registered" in row['Name'] or
+                        "Result Format Not Recognized" in row['Name']):
+                        continue
+
+                    raw_grades = [g.strip().lower() for g in row['Grades'].split(',')]
+                    grades = [self.normalize_grade(g) for g in raw_grades]
+                    courses = [c.strip() for c in row['Courses'].split(',')]
+                    group = row.get('Group', 'Unknown')
+
+                    if len(courses) != len(grades):
+                        continue
+
+                    grade_count = len(grades)
+                    point = sum(GRADE_POINTS.get(g, -1.00) for g in grades) / grade_count if grade_count > 0 else 0.00
+
+                    students.append({
+                        'Name': row['Name'],
+                        'Exam Roll': row['Exam Roll'],
+                        'Registration No': row['Registration No'],
+                        'Result': row['Result'],
+                        'Courses': courses,
+                        'Grades': grades,
+                        'Raw Grades': raw_grades,
+                        'Point': round(point, 2),
+                        'Group': group,
+                        'Year': row.get('Year', '')
+                    })
+                except Exception as e:
+                    print(f"Row {row_num}: Error processing record - {str(e)}")
         return students
 
-    with open(INPUT_CSV, mode='r', encoding='utf-8') as file:
-        reader = csv.DictReader(file)
-        for row_num, row in enumerate(reader, 1):
-            try:
-                # Skip not registered students
-                if "This Student Is Not Registered" in row['Name']:
-                    continue
+    def rank_students(self, students):
+        """Rank students with proper tie-breaking"""
+        if not students:
+            return []
 
-                # Process grades and courses
-                raw_grades = [g.strip() for g in row['Grades'].split(',')]
-                grades = [normalize_grade(g) for g in raw_grades]
-                courses = [c.strip() for c in row['Courses'].split(',')]
+        students.sort(key=lambda x: (
+            -x['Point'],
+            [GRADE_POINTS.get(g, -1.00) for g in x['Grades']]
+        ))
 
-                # Validate we have exactly 7 courses and grades
-                if len(courses) != 7 or len(grades) != 7:
-                    print(f"Row {row_num}: Expected 7 courses/grades, got {len(courses)}/{len(grades)}")
-                    continue
+        current_rank = 1
+        for i, student in enumerate(students):
+            if i > 0:
+                prev = students[i-1]
+                if not (student['Point'] == prev['Point'] and
+                        student['Grades'] == prev['Grades']):
+                    current_rank = i + 1
+            student['Rank'] = current_rank
 
-                # Calculate GPA with Absent handling
-                try:
-                    point = sum(GRADE_POINTS.get(g, -1.00) for g in grades) / 7
-                except Exception as e:
-                    print(f"Row {row_num}: Error calculating GPA - {str(e)}")
-                    continue
+        return students
 
-                students.append({
-                    'Name': row['Name'],
-                    'Exam Roll': row['Exam Roll'],
-                    'Registration No': row['Registration No'],
-                    'Result': row['Result'],
-                    'Courses': courses,
-                    'Grades': grades,
-                    'Raw Grades': raw_grades,  # Keep original for display
-                    'Point': round(point, 2)
-                })
-            except Exception as e:
-                print(f"Row {row_num}: Error processing record - {str(e)}")
-    return students
+    def generate_pdf_report(self, students, group_name):
+        """Generate PDF report for a specific group"""
+        self.ensure_directory_exists(self.OUTPUT_DIR)
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
 
-def rank_students(students):
-    """Rank students with proper tie-breaking including Absent grades"""
-    if not students:
-        return []
-
-    # Sort by Point (descending) and then by all grades (for proper tie-breaking)
-    students.sort(key=lambda x: (
-        -x['Point'],
-        [GRADE_POINTS.get(g, -1.00) for g in x['Grades']]  # Handle Absent grades
-    ))
-
-    # Assign ranks with strict tie handling
-    current_rank = 1
-    for i, student in enumerate(students):
-        if i > 0:
-            # Only give same rank if identical GPA AND identical grade distribution
-            prev = students[i-1]
-            if not (student['Point'] == prev['Point'] and
-                    student['Grades'] == prev['Grades']):
-                current_rank = i + 1
-
-        student['Rank'] = current_rank
-
-    return students
-
-def generate_pdf_report(students):
-    """Generate properly formatted PDF report showing Absent grades"""
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_page()
-
-    # Title
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, "National University - Examination Results", 0, 1, 'C')
-    pdf.cell(0, 10, "Ranking List By Rakib-35", 0, 1, 'C')
-    pdf.ln(10)
-
-    for student in students:
-        pdf.set_font("Arial", '', 12)
-
-        # Student info
-        info = [
-            f"Rank: {student['Rank']}",
-            f"Name: {student['Name']}",
-            f"Roll: {student['Exam Roll']}",
-            f"Reg: {student['Registration No']}",
-            f"Result: {student['Result']}",
-            f"GPA: {student['Point']:.2f}"
-        ]
-
-        for line in info:
-            pdf.cell(0, 10, line, 0, 1)
-        pdf.ln(5)
-
-        # Grades table - fixed column widths
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(40, 10, "Course Code", 1)
-        pdf.cell(30, 10, "Grade", 1)
-        pdf.ln()
-        pdf.set_font("Arial", '', 12)
-
-        for course, grade in zip(student['Courses'], student['Raw Grades']):
-            pdf.cell(40, 10, course, 1)
-            pdf.cell(30, 10, grade.upper(), 1)  # Show grades in uppercase
-            pdf.ln()
-
+        # PDF Header
+        pdf.set_font("Arial", 'B', 16)
+        pdf.cell(0, 10, "National University - Examination Results", 0, 1, 'C')
+        pdf.cell(0, 10, f"Official Ranking List - {group_name} Group", 0, 1, 'C')
+        pdf.cell(0, 10, f"Total Students: {len(students)}", 0, 1, 'C')
         pdf.ln(10)
 
-    pdf.output(os.path.join(OUTPUT_DIR, "ranking.pdf"))
+        # Student Results
+        for student in students:
+            pdf.set_font("Arial", '', 12)
 
-def generate_reports():
-    """Generate all reports"""
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+            # Student Info (without course count)
+            info = [
+                f"Rank: {student['Rank']}",
+                f"Name: {student['Name']}",
+                f"Roll: {student['Exam Roll']}",
+                f"Reg: {student['Registration No']}",
+                f"Result: {student['Result']}",
+                f"GPA: {student['Point']:.2f}"
+            ]
 
-    print("Loading student data...")
-    students = load_student_data()
+            for line in info:
+                pdf.cell(0, 10, line, 0, 1)
+            pdf.ln(5)
 
-    if not students:
-        print("No valid student records found")
-        return
+            # Course Grades Table
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(40, 10, "Course Code", 1)
+            pdf.cell(30, 10, "Grade", 1)
+            pdf.ln()
+            pdf.set_font("Arial", '', 12)
 
-    print(f"Processing {len(students)} records...")
-    ranked_students = rank_students(students)
+            for course, grade in zip(student['Courses'], student['Raw Grades']):
+                pdf.cell(40, 10, course, 1)
+                pdf.cell(30, 10, grade.upper(), 1)
+                pdf.ln()
 
-    # Verify ranking
-    print("\nVerifying ranks...")
-    rank_counts = {}
-    for student in ranked_students:
-        rank = student['Rank']
-        rank_counts[rank] = rank_counts.get(rank, 0) + 1
+            pdf.ln(10)
 
-    for rank, count in sorted(rank_counts.items()):
-        print(f"Rank {rank}: {count} student(s)")
+        # Save PDF
+        filename = f"ranking_{group_name.replace('.', '').replace(' ', '_')}.pdf"
+        pdf.output(os.path.join(self.OUTPUT_DIR, filename))
 
-    print("\nGenerating PDF report...")
-    generate_pdf_report(ranked_students)
+    def ensure_directory_exists(self, directory):
+        """Ensure directory exists"""
+        os.makedirs(directory, exist_ok=True)
+        return directory
 
-    print(f"\nReport successfully generated at: {os.path.join(OUTPUT_DIR, 'ranking.pdf')}")
+    def normalize_grade(self, grade):
+        """Convert grade to standard format"""
+        grade = str(grade).strip().lower()
+        if grade == 'fail':
+            return 'f'
+        elif grade == 'absent':
+            return 'absent'
+        return grade
 
 if __name__ == "__main__":
-    generate_reports()
+    creator = RankingCreator()
+    creator.generate_rankings()
