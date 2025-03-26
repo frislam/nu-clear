@@ -1,5 +1,4 @@
 # NU-Clear
-**Version 1.0**  
 *A one-click solution for National University result scraping and ranking*
 
 ![NU-Clear Logo](https://upload.wikimedia.org/wikipedia/en/thumb/5/58/National_University%2C_Bangladesh_crest.svg/800px-National_University%2C_Bangladesh_crest.svg.png)
