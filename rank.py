@@ -1,11 +1,11 @@
-# version: 2.0
+# version: 2.1
 import os
 import csv
 from fpdf import FPDF
 
 # Configuration
-INPUT_CSV = "./results/nu_results.csv"
-OUTPUT_DIR = "./reports"
+INPUT_CSV = os.path.join(".", "results", "nu_results.csv")
+OUTPUT_DIR = os.path.join(".", "reports")
 GRADE_POINTS = {
     'a+': 4.00, 'a': 3.75, 'a-': 3.50,
     'b+': 3.25, 'b': 3.00, 'b-': 2.75,
@@ -42,7 +42,8 @@ class RankingCreator:
         for group, students in grouped_students.items():
             if students:
                 ranked_students = self.rank_students(students)
-                self.generate_pdf_report(ranked_students, group)
+                year = students[0].get('Year', '')
+                self.generate_pdf_report(ranked_students, group, year)
                 print(f"Generated ranking report for {group} group")
 
         print(f"\nAll ranking reports generated in: {self.OUTPUT_DIR}")
@@ -111,7 +112,7 @@ class RankingCreator:
 
         return students
 
-    def generate_pdf_report(self, students, group_name):
+    def generate_pdf_report(self, students, group_name, year):
         """Generate PDF report for a specific group"""
         self.ensure_directory_exists(self.OUTPUT_DIR)
         pdf = FPDF()
@@ -121,7 +122,7 @@ class RankingCreator:
         # PDF Header
         pdf.set_font("Arial", 'B', 16)
         pdf.cell(0, 10, "National University - Examination Results", 0, 1, 'C')
-        pdf.cell(0, 10, f"Official Ranking List - {group_name} Group", 0, 1, 'C')
+        pdf.cell(0, 10, f"Official Ranking List - {group_name} Group {year}", 0, 1, 'C')
         pdf.cell(0, 10, f"Total Students: {len(students)}", 0, 1, 'C')
         pdf.ln(10)
 
@@ -158,7 +159,8 @@ class RankingCreator:
             pdf.ln(10)
 
         # Save PDF
-        filename = f"ranking_{group_name.replace('.', '').replace(' ', '_')}.pdf"
+        year_suffix = year[-2:] if year else "00"
+        filename = f"{group_name.replace('.', '').replace(' ', '_')}_{year_suffix}.pdf"
         pdf.output(os.path.join(self.OUTPUT_DIR, filename))
 
     def ensure_directory_exists(self, directory):
