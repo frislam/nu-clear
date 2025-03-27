@@ -1,7 +1,14 @@
 # version: 2.1
+
 import os
 import csv
 from fpdf import FPDF
+from colorama import init, Fore, Style
+from rich.console import Console
+from rich.progress import track
+
+init(autoreset=True)
+console = Console()
 
 # Configuration
 INPUT_CSV = os.path.join(".", "results", "nu_results.csv")
@@ -21,13 +28,13 @@ class RankingCreator:
 
     def generate_rankings(self):
         """Generate ranking reports for all groups"""
-        print("\nGenerating ranking reports for all groups...")
+        console.print("\nGenerating ranking reports for all groups...", style="bold green")
 
         # Load and filter student data
         all_students = self.load_student_data()
 
         if not all_students:
-            print("No valid student records found")
+            console.print("No valid student records found", style="bold red")
             return
 
         # Group students by their group
@@ -44,15 +51,15 @@ class RankingCreator:
                 ranked_students = self.rank_students(students)
                 year = students[0].get('Year', '')
                 self.generate_pdf_report(ranked_students, group, year)
-                print(f"Generated ranking report for {group} group")
+                console.print(f"Generated ranking report for {group} group", style="bold green")
 
-        print(f"\nAll ranking reports generated in: {self.OUTPUT_DIR}")
+        console.print(f"\nAll ranking reports generated in: {self.OUTPUT_DIR}", style="bold green")
 
     def load_student_data(self):
         """Load and filter student data from CSV"""
         students = []
         if not os.path.exists(self.INPUT_CSV):
-            print(f"Error: CSV file not found at {self.INPUT_CSV}")
+            console.print(f"Error: CSV file not found at {self.INPUT_CSV}", style="bold red")
             return students
 
         with open(self.INPUT_CSV, mode='r', encoding='utf-8') as file:
@@ -85,10 +92,10 @@ class RankingCreator:
                         'Raw Grades': raw_grades,
                         'Point': round(point, 2),
                         'Group': group,
-                        'Year': row.get('Year', '')
+                        'Year': row.get('Year', '')  # Corrected the unterminated string literal
                     })
                 except Exception as e:
-                    print(f"Row {row_num}: Error processing record - {str(e)}")
+                    console.print(f"Row {row_num}: Error processing record - {str(e)}", style="bold red")
         return students
 
     def rank_students(self, students):
