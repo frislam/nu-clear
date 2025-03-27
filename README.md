@@ -31,7 +31,7 @@ $ sudo apt install chromium-browser
 $ sudo pip3 install selenium fpdf
 $ sudo pip3 install webdriver_manager # Override the externally managed environment (not recommended): You can use the '--break-system-packages' flag to override the restriction, but this is not recommended as it may break your Python installation or OS.
 ```
-### Wndows
+### Windows
 
 1. **Install Python**:
    - Download and install Python from the [official website](https://www.python.org/downloads/).
