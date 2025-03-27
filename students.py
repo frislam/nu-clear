@@ -1,4 +1,4 @@
-# version: 1.2
+# version: 2.0
 import os
 import time
 from results import ResultScraper
