@@ -1,4 +1,4 @@
-# version: 1.2
+# version: 2.0
 import os
 import csv
 import time
@@ -11,11 +11,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
+from webdriver_manager.chrome import ChromeDriverManager
 
 class ResultScraper:
     def __init__(self, input_csv="./results/nu_results.csv"):
         self.INPUT_CSV = input_csv
-        self.service = Service("./chromedriver-linux64/chromedriver")
+        self.service = Service(ChromeDriverManager().install())
         self.animation_running = False
         self.group_options = {
             '1': 'B.A',
