@@ -19,20 +19,47 @@ NU-Clear is an automated Python tool that:
 
 ### System
 - Linux (Tested on Debian 12)
-- Chrome Browser 115 or later
+- Windows
+- Mac
 
-### Dependencies
+## Dependencies
+ ### Linux
 ```bash
 # Core packages
-sudo apt update
-sudo apt install python3 python3-pip python3-venv git unzip
-
-# Python libraries
-sudo apt install python3-pandas
-pip3 install selenium
-sudo apt install python3-fpdf python3-markdown
-pip3 install webdriver-manager
+$ sudo apt update && sudo apt upgrade -y
+$ sudo apt install chromium-browser
+$ sudo pip3 install selenium fpdf
+$ sudo pip3 install webdriver_manager # Override the externally managed environment (not recommended): You can use the '--break-system-packages' flag to override the restriction, but this is not recommended as it may break your Python installation or OS.
 ```
+### Wndows
+
+1. **Install Python**:
+   - Download and install Python from the [official website](https://www.python.org/downloads/).
+
+2. **Install Google Chrome**:
+   - Download and install Google Chrome from the [official website](https://www.google.com/chrome/).
+
+3. **Install Required Packages**:
+   - Open Command Prompt and run:
+     ```sh
+     pip install selenium webdriver_manager fpdf
+     ```
+### Mac
+
+1. **Install Python**:
+   - Download and install Python from the [official website](https://www.python.org/downloads/). Alternatively, you can use Homebrew:
+     ```sh
+     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+     brew install python
+     ```
+2. **Install Google Chrome**:
+   - Download and install Google Chrome from the [official website](https://www.google.com/chrome/).
+
+3. **Install Required Packages**:
+   - Open Terminal and run:
+     ```sh
+     pip3 install selenium webdriver_manager fpdf
+     ```
 ## Setup
 
  ### 1. Clone Repository
@@ -40,43 +67,29 @@ pip3 install webdriver-manager
 git clone https://frislam/nu-clear.git
 cd nu-clear
 ```
- ### 2. ChromeDriver Setup
-```
-# Check Chrome version first
-google-chrome --version  # Should show 134.0.6998.165 or higher
-
-# Download matching driver (example for v115)
-wget https://storage.googleapis.com/chrome-for-testing-public/134.0.6998.165/linux64/chromedriver-linux64.zip
-unzip chromedriver-linux64.zip -d chromedriver-linux64
-rm chromedriver-linux64.zip
-```
 ## Usage
 
  ### Main Workflow
 ```
-sudo python3 students.py
+$ sudo python3 students.py # linux
+$ python students.py # windows
+$ python3 students.py # mac
 ```
 - Follow prompts to enter registration range
 
 ## File Management
-- **Backup your CSV files**- The system overwrites `nu_results.csv` on each run
-- Recommended backup command:
-  ```
-  cp ./results/nu_results.csv ./results/backup_$(date +%Y-%m-%d).csv
-  ```
-
-## Troubleshooting
-  
-  ### Common Issues
-  - **ChromeDriver Mismatch**
+- **Backup your CSV & PDF files**- The system overwrites `nu_results.csv` & `*.pdf` on each run
+- Note the PDF only overwrites for same data. Example: No overwrites if `BSc_25.pdf = BA_24.pdf` & Overwrites if `BSc_24.pdf = BSc_24.pdf`
 
 ## Version History
-- 1.2 (current):
+- 2.0 (current):
   - Initial release
   - Supports All Examination
   - All Group
   - All Departments
   - Handle Absent/Fail cases
+  - Cross-Platform Support
+  - Added Year in PDF header
 
 ## Disclaimer
 This tool is for educational purposes only. Always verify official results from NU website.
