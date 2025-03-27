@@ -64,7 +64,7 @@ $ sudo pip3 install webdriver_manager # Override the externally managed environm
 
  ### 1. Clone Repository
 ```
-git clone https://frislam/nu-clear.git
+git clone https://github.com/frislam/nu-clear.git
 cd nu-clear
 ```
 ## Usage
