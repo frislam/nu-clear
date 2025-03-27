@@ -1,4 +1,5 @@
 # version: 2.0
+
 import os
 import csv
 import time
@@ -12,12 +13,17 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from webdriver_manager.chrome import ChromeDriverManager
+from colorama import init, Fore, Style
+from rich.console import Console
+from rich.progress import track, Progress, SpinnerColumn, BarColumn, TextColumn
+
+init(autoreset=True)
+console = Console()
 
 class ResultScraper:
     def __init__(self, input_csv="./results/nu_results.csv"):
         self.INPUT_CSV = input_csv
         self.service = Service(ChromeDriverManager().install())
-        self.animation_running = False
         self.group_options = {
             '1': 'B.A',
             '2': 'B.S.S',
@@ -35,48 +41,23 @@ class ResultScraper:
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
 
-    def loading_animation(self, message):
-        """Show a loading animation while process is running"""
-        chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-        i = 0
-        while self.animation_running:
-            sys.stdout.write(f"\r{message} {chars[i % len(chars)]}")
-            sys.stdout.flush()
-            time.sleep(0.1)
-            i += 1
-        sys.stdout.write("\r" + " " * (len(message) + 2) + "\r")
-        sys.stdout.flush()
-
-    def start_animation(self, message):
-        """Start the loading animation in a separate thread"""
-        self.animation_running = True
-        t = Thread(target=self.loading_animation, args=(message,))
-        t.daemon = True
-        t.start()
-        return t
-
-    def stop_animation(self):
-        """Stop the loading animation"""
-        self.animation_running = False
-        time.sleep(0.2)
-
     def get_user_inputs(self):
         """Get all required inputs from user in correct order"""
-        print("\n" + "="*50)
-        print("National University Result Collection System")
-        print("="*50 + "\n")
+        console.print("\n" + "="*50, style="bold blue")
+        console.print("National University Result Collection System", style="bold yellow")
+        console.print("="*50 + "\n", style="bold blue")
 
         # 1. Get Group selection first
-        print("Available Group Options:")
+        console.print("Available Group Options:", style="bold green")
         for key, value in self.group_options.items():
-            print(f"{key}. {value}")
+            console.print(f"{key}. {value}", style="bold cyan")
 
         while True:
             group_choice = input("\nSelect group number (1-6): ").strip()
             if group_choice in self.group_options:
                 group = self.group_options[group_choice]
                 break
-            print("Invalid choice. Please enter a number between 1 and 6")
+            console.print("Invalid choice. Please enter a number between 1 and 6", style="bold red")
 
         # 2. Get Registration range
         while True:
@@ -84,14 +65,14 @@ class ResultScraper:
             end_reg = input("Enter ending registration number (e.g., 987654321): ").strip()
 
             if not start_reg.isdigit() or not end_reg.isdigit():
-                print("❌ Error: Registration numbers must be numeric")
+                console.print("❌ Error: Registration numbers must be numeric", style="bold red")
                 continue
 
             start_reg = int(start_reg)
             end_reg = int(end_reg)
 
             if start_reg > end_reg:
-                print("❌ Error: Starting number must be less than ending number")
+                console.print("❌ Error: Starting number must be less than ending number", style="bold red")
                 continue
 
             break
@@ -101,7 +82,7 @@ class ResultScraper:
             year = input("\nEnter examination year (e.g., 2023): ").strip()
             if year.isdigit() and len(year) == 4 and int(year) > 2000:
                 break
-            print("Invalid year. Please enter a valid 4-digit year (e.g., 2023)")
+            console.print("Invalid year. Please enter a valid 4-digit year (e.g., 2023)", style="bold red")
 
         return group, start_reg, end_reg, year
 
@@ -109,26 +90,22 @@ class ResultScraper:
         """Main execution flow"""
         group, start_reg, end_reg, year = self.get_user_inputs()
 
-        # Show summary with animation
-        print(f"\nStarting scraping from {start_reg} to {end_reg}")
-        print(f"Group: {group}")
-        print(f"Exam Year: {year}")
+        # Show summary
+        console.print(f"\nStarting scraping from {start_reg} to {end_reg}", style="bold green")
+        console.print(f"Group: {group}", style="bold green")
+        console.print(f"Exam Year: {year}", style="bold green")
 
-        # Start animation
-        anim_thread = self.start_animation("Processing registrations")
-
-        # Perform scraping
+        # Perform scraping with progress bar
         results = self.scrape_results(start_reg, end_reg, group, year)
-        self.stop_animation()
 
         if results:
             if self.save_to_csv(results):
-                print("\n" + "="*50)
-                print(f"Successfully collected results to {self.INPUT_CSV}")
-                print("="*50 + "\n")
+                console.print("\n" + "="*50, style="bold blue")
+                console.print(f"Successfully collected results to {self.INPUT_CSV}", style="bold green")
+                console.print("="*50 + "\n", style="bold blue")
                 return True
 
-        print("❌ No results were collected")
+        console.print("❌ No results were collected", style="bold red")
         return False
 
     def scrape_results(self, start_reg, end_reg, group, year):
@@ -138,19 +115,28 @@ class ResultScraper:
         all_results = []
 
         try:
-            current_reg = start_reg
-            while current_reg <= end_reg:
-                result_data = self.process_registration(driver, wait, current_reg, group, year)
-                all_results.append(result_data)
+            with Progress(
+                SpinnerColumn(),
+                "[progress.description]{task.description}",
+                BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                console=console,
+            ) as progress:
+                task = progress.add_task("Scraping...", total=end_reg - start_reg + 1)
+                current_reg = start_reg
+                while current_reg <= end_reg:
+                    result_data = self.process_registration(driver, wait, current_reg, group, year)
+                    all_results.append(result_data)
 
-                # Single output per registration
-                status = "Not registered" if "This Student Is Not Registered" in result_data["Name"] else "Success"
-                print(f"✅ {current_reg}: {status}")
+                    # Single output per registration
+                    status = "Not registered" if "This Student Is Not Registered" in result_data["Name"] else "Success"
+                    console.print(f"✅ {current_reg}: {status}", style="bold green")
 
-                current_reg += 1
-                time.sleep(2)  # Be polite to the server
+                    current_reg += 1
+                    progress.advance(task)
+                    time.sleep(2)  # Be polite to the server
         except Exception as e:
-            print(f"❌ Critical error: {str(e)}")
+            console.print(f"❌ Critical error: {str(e)}", style="bold red")
         finally:
             driver.quit()
             return all_results
@@ -223,7 +209,7 @@ class ResultScraper:
             except (TimeoutException, WebDriverException) as e:
                 attempts += 1
                 if attempts == max_attempts:
-                    print(f"⚠️ Failed after {max_attempts} attempts for {reg_no}")
+                    console.print(f"⚠️ Failed after {max_attempts} attempts for {reg_no}", style="bold red")
                     return {
                         "Registration No": str(reg_no),
                         "Name": "Failed to retrieve",
@@ -299,7 +285,7 @@ class ResultScraper:
                     })
             return True
         except Exception as e:
-            print(f"❌ Error saving CSV: {str(e)}")
+            console.print(f"❌ Error saving CSV: {str(e)}", style="bold red")
             return False
 
     def ensure_directory_exists(self, directory):
