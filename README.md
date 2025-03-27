@@ -17,7 +17,7 @@ NU-Clear is an automated Python tool that:
 
 ## Requirements
 
-### System
+### Supported System
 - Linux (Tested on Debian 12)
 - Windows
 - Mac
