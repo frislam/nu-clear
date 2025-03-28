@@ -1,8 +1,6 @@
 # version: 2.0
 import os
 import time
-import tkinter as tk
-from tkinter import messagebox, simpledialog
 from results import ResultScraper
 from rank import RankingCreator
 from colorama import init, Fore, Style
@@ -14,8 +12,6 @@ console = Console()
 
 def main():
     """Main program flow with user prompts"""
-    root = tk.Tk()
-    root.withdraw()  # Hide the root window
 
     def show_menu():
         console.print("\n" + "="*50, style="bold blue")
