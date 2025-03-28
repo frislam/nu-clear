@@ -28,7 +28,7 @@ NU-Clear is an automated Python tool that:
 # Core packages
 $ sudo apt update && sudo apt upgrade -y
 $ sudo apt install chromium-browser
-$ sudo pip3 install selenium fpdf
+$ sudo apt install python3-selenium python3-fpdf python3-colorama python3-rich
 $ sudo pip3 install webdriver_manager # Override the externally managed environment (not recommended): You can use the '--break-system-packages' flag to override the restriction, but this is not recommended as it may break your Python installation or OS.
 ```
 ### Windows
@@ -42,7 +42,7 @@ $ sudo pip3 install webdriver_manager # Override the externally managed environm
 3. **Install Required Packages**:
    - Open Command Prompt and run:
      ```sh
-     pip install selenium webdriver_manager fpdf
+     pip install selenium webdriver_manager fpdf colorama rich
      ```
 ### Mac
 
@@ -58,7 +58,7 @@ $ sudo pip3 install webdriver_manager # Override the externally managed environm
 3. **Install Required Packages**:
    - Open Terminal and run:
      ```sh
-     pip3 install selenium webdriver_manager fpdf
+     pip3 install selenium webdriver_manager fpdf colorama rich
      ```
 ## Setup
 
